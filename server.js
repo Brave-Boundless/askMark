@@ -8,6 +8,7 @@ const express = require('express');
 const cors = require('cors');
 const Anthropic = require('@anthropic-ai/sdk');
 const { Resend } = require('resend');
+const { buildSystemPrompt } = require('./context');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -207,7 +208,8 @@ app.post('/api/chat', async (req, res) => {
       });
     }
 
-    const { messages, conversationId } = req.body;
+    // `context` is sent only by the Brave & Boundless app; the website never sends it.
+    const { messages, conversationId, context } = req.body;
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return res.status(400).json({ error: 'Messages array is required' });
@@ -223,7 +225,7 @@ app.post('/api/chat', async (req, res) => {
     const response = await anthropic.messages.create({
       model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-6',
       max_tokens: 1024,
-      system: SYSTEM_PROMPT,
+      system: buildSystemPrompt(SYSTEM_PROMPT, context),
       messages: formattedMessages
     });
 
